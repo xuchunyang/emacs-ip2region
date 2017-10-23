@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "./ip2region/binding/c/ip2region.h"
 #include <emacs-module.h>
@@ -26,41 +27,63 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 int plugin_is_GPL_compatible;
 
 static char *
-foo ()
+retrieve_string (emacs_env *env, emacs_value str)
 {
-  char *result;
-  char *ip = "116.62.40.117";
-  char *db = "ip2region/data/ip2region.db";
-  ip2region_entry ip2rEntry;
-  datablock_entry datablock;
-  memset (&datablock, 0, sizeof datablock);
+  char *buf = NULL;
+  ptrdiff_t size = 0;
 
-  if (ip2region_create (&ip2rEntry, db) == 0)
-    {
-      fprintf (stderr, "Error: Fail to create the ip2region object\n");
-      exit (1);
-    }
+  env->copy_string_contents (env, str, NULL, &size);
 
-  ip2region_btree_search_string (&ip2rEntry, ip, &datablock);
-  if (asprintf (&result,
-                "The region of IP address %s is %d|%s",
-                ip,
-                datablock.city_id,
-                datablock.region) < 0)
-    result = NULL;
+  buf = malloc (size);
+  if (buf == NULL) return NULL;
 
-  ip2region_destroy (&ip2rEntry);
-  return result;
+  env->copy_string_contents (env, str, buf, &size);
+
+  return buf;
+}
+
+static void
+ip2region_module_destroy (void *arg)
+{
+  ip2region_destroy ((ip2region_entry *) arg);
 }
 
 static emacs_value
-Fip2region_module_foo (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
+Fip2region_module_create (emacs_env *env, ptrdiff_t nargs, emacs_value args[],
+                          void *data)
 {
-  char *result = foo ();
-  if (result)
-    return env->make_string (env, result, strlen (result));
-  else
-    return env->intern (env, "nil");
+  assert (nargs == 1);
+
+  char *dbfile = NULL;
+  ip2region_entry *ip2r = NULL;
+  emacs_value Qnil = env->intern (env, "nil");
+
+  ip2r = malloc (sizeof *ip2r);
+  if (ip2r == NULL) return Qnil;
+  dbfile = retrieve_string (env, args[0]);
+  if (ip2region_create (ip2r, dbfile) == 0)
+    {
+      free (ip2r);
+      free (dbfile);
+      return Qnil;
+    }
+  free (dbfile);
+  return env->make_user_ptr (env, ip2region_module_destroy, ip2r);
+}
+
+static emacs_value
+Fip2region_module_search (emacs_env *env, ptrdiff_t nargs, emacs_value args[],
+                          void *data)
+{
+  assert (nargs == 2);
+
+  ip2region_entry *ip2r = env->get_user_ptr (env, args[0]);
+  char *ip = retrieve_string (env, args[1]);
+  datablock_entry datablock;
+  memset (&datablock, 0, sizeof datablock);
+
+  ip2region_btree_search_string (ip2r, ip, &datablock);
+  return env->make_string (env, datablock.region, strlen (datablock.region));
 }
 
 /* Lisp utilities for easier readability (simple wrappers).  */
@@ -111,9 +134,10 @@ emacs_module_init (struct emacs_runtime *ert)
 
 #define DEFUN(lsym, csym, amin, amax, doc, data) \
   bind_function (env, lsym, \
-		 env->make_function (env, amin, amax, csym, doc, data))
+                 env->make_function (env, amin, amax, csym, doc, data))
 
-  DEFUN ("ip2region-module-foo", Fip2region_module_foo, 0, 0, "Return t.", NULL);
+  DEFUN ("ip2region-module-create", Fip2region_module_create, 1, 1, "Create.", NULL);
+  DEFUN ("ip2region-module-search", Fip2region_module_search, 2, 2, "Search.", NULL);
 
 #undef DEFUN
 
