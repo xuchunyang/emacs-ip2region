@@ -47,5 +47,7 @@
       (message "%s" location))
     location))
 
+;; XXX: Support domain and even URL
+
 (provide 'ip2region)
 ;;; ip2region.el ends here

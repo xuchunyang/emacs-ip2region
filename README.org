@@ -2,7 +2,13 @@
 
 这是 IP 地址定位库 [[https://github.com/lionsoul2014/ip2region][lionsoul2014/ip2region]] 的 Emacs 动态模块。
 
-** Usage
+** Compile
+
+#+BEGIN_SRC sh
+make -k EMACS_ROOT=/path/to/the/source/code/of/emacs
+#+END_SRC
+
+** API
 
 #+BEGIN_SRC emacs-lisp
 ;; M-! host emacs-china.org RET
