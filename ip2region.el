@@ -36,12 +36,16 @@
 ;;;###autoload
 (defun ip2region (ip)
   "返回 IP 所在的物理位置."
+  (interactive "sIP address: ")
   (unless ip2region--obj
     (setq ip2region--obj
           (ip2region-module-create ip2region-db-file)))
   (unless ip2region--obj
     (error "ip2region-module-create failed"))
-  (ip2region-module-search ip2region--obj ip))
+  (let ((location (ip2region-module-search ip2region--obj ip)))
+    (when (called-interactively-p 'any)
+      (message "%s" location))
+    location))
 
 (provide 'ip2region)
 ;;; ip2region.el ends here
