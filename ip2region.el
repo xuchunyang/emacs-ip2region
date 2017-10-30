@@ -44,7 +44,7 @@
     (error "ip2region-module-create failed"))
   (let ((location (ip2region-module-search ip2region--obj ip)))
     (when (called-interactively-p 'any)
-      (message "%s" location))
+      (message "%S" location))
     location))
 
 ;; XXX: Support domain and even URL

@@ -83,8 +83,11 @@ Fip2region_module_search (emacs_env *env, ptrdiff_t nargs, emacs_value args[],
   memset (&datablock, 0, sizeof datablock);
 
   ip2region_btree_search_string (ip2r, ip, &datablock);
-  /* XXX: Also return datablock.city_id */
-  return env->make_string (env, datablock.region, strlen (datablock.region));
+
+  emacs_value cargs[] =
+    { env->make_integer (env, datablock.city_id),
+      env->make_string (env, datablock.region, strlen (datablock.region))};
+  return env->funcall (env, env->intern (env, "cons"), 2, cargs);
 }
 
 /* Lisp utilities for easier readability (simple wrappers).  */

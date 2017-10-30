@@ -14,5 +14,5 @@ make -k EMACS_ROOT=/path/to/the/source/code/of/emacs
 ;; M-! host emacs-china.org RET
 ;; emacs-china.org has address 116.62.40.117
 (ip2region "116.62.40.117")
-     => "中国|华东|浙江省|杭州市|阿里云"
+     => (1132 . "中国|华东|浙江省|杭州市|阿里云")
 #+END_SRC
